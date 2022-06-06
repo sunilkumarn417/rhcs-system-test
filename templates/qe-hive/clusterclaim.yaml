@@ -1,0 +1,8 @@
+---
+apiVersion: hive.openshift.io/v1
+kind: ClusterClaim
+metadata:
+  name: sno-cluster
+  namespace: ceph
+spec:
+  clusterPoolName: ceph-rhos01hub-pool
