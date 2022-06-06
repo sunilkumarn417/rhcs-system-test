@@ -1,0 +1,116 @@
+# Clusterpool of a single cluster type (SNO)
+# Replace fields:
+#  - name
+#  - namespace
+apiVersion: v1
+kind: List
+items:
+- apiVersion: hive.openshift.io/v1
+  kind: ClusterPool
+  metadata:
+    name: ceph-rhos01hub-pool
+    namespace: ceph
+  spec:
+    baseDomain: ceph.ccitredhat.com
+    imageSetRef:
+      name: ceph-imageset-410 # see line 114
+    inventory:
+      - name: ceph-rhos01hub # see line 75
+    platform:
+      openstack:
+        cloud: openstack
+        credentialsSecretRef:
+          name: ceph-rhos01-creds # see line 94
+    installConfigSecretTemplateRef:
+      name: sno-install-config # see line 33
+    size: 1
+    maxSize: 1
+    maxConcurrent: 1
+    skipMachinePools: true
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: sno-install-config
+    namespace: ceph
+  type: Opaque
+  stringData:
+    install-config.yaml: |
+      apiVersion: v1
+      baseDomain: ceph.ccitredhat.com
+      compute:
+      - name: worker
+        platform:
+          openstack:
+            type: ci.memory.medium
+        replicas: 0
+      controlPlane:
+        name: master
+        platform:
+          openstack:
+            type: ci.standard.xxxl
+        replicas: 1
+      metadata:
+        name: demo1
+      networking:
+        clusterNetwork:
+        - cidr: 10.128.0.0/14
+          hostPrefix: 23
+        machineNetwork:
+        - cidr: 192.169.0.0/16
+        networkType: OpenShiftSDN
+        serviceNetwork:
+        - 172.30.0.0/16
+      platform:
+        openstack:
+          cloud: ""
+          computeFlavor: m1.large
+          externalDNS: null
+          externalNetwork: shared_net_12
+      pullSecret: ""
+      sshKey: ""
+- apiVersion: hive.openshift.io/v1
+  kind: ClusterDeploymentCustomization
+  metadata:
+    name: ceph-rhos01hub
+    namespace: ceph
+  spec:
+    installConfigPatches:
+      - op: replace
+        path: /platform/openstack/apiFloatingIP
+        value: 10.0.195.158
+      - op: replace
+        path: /platform/openstack/ingressFloatingIP
+        value: 10.0.195.173
+      - op: replace
+        path: /platform/openstack/externalNetwork
+        value: shared_net_12
+      - op: replace
+        path: /metadata/name
+        value: rhos01hub
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: ceph-rhos01-creds
+    namespace: ceph
+  type: Opaque
+  stringData:
+    clouds.yaml: |
+      clouds:
+        openstack:
+          auth:
+            auth_url: https://api.rhos-01.prod.psi.rdu2.redhat.com:13000
+            project_id: 1cd6193041bc4f8aaeeab7c737ce8b1d
+            project_name: "ceph-jenkins"
+            user_domain_name: "redhat.com"
+            username: ""
+            password: ""
+          region_name: "regionOne"
+          interface: "public"
+          identity_api_version: 3
+- apiVersion: hive.openshift.io/v1
+  kind: ClusterImageSet
+  metadata:
+    name: ceph-imageset-410
+    namespace: ceph
+  spec:
+    releaseImage: quay.io/openshift-release-dev/ocp-release:4.10.3-x86_64
