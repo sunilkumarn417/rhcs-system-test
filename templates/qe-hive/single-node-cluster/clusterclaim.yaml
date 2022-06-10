@@ -1,0 +1,8 @@
+---
+apiVersion: hive.openshift.io/v1
+kind: ClusterClaim
+metadata:
+  name: ceph-rhosd-01
+  namespace: ceph
+spec:
+  clusterPoolName: ceph-rhosd-pool

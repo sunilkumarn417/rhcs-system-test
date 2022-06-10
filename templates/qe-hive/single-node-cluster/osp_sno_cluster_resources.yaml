@@ -1,0 +1,102 @@
+# Clusterpool of a single cluster type (SNO)
+# Replace fields:
+#  - name
+#  - namespace
+#  - floating IPs
+#  - subnet-name
+#  - if needed, networking part
+#  - if needed, baseDomain
+#  - if needed, OpenStack credentials ar line-28
+---
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: hive.openshift.io/v1
+    kind: ClusterPool
+    metadata:
+      name: CLUSTER__NAME-pool
+      namespace: ceph
+    spec:
+      baseDomain: ceph.ccitredhat.com
+      imageSetRef:
+        name: CLUSTER__NAME-imageset
+      inventory:
+        - name: CLUSTER__NAME
+      platform:   # change credref name if you want to use different
+        openstack:   # rhosd-project like ceph-project-01
+          cloud: openstack
+          credentialsSecretRef:
+            name: rhosd-ceph-sys-test
+      installConfigSecretTemplateRef:
+        name: CLUSTER__NAME-install-config  # see line 33
+      size: 1
+      maxSize: 1
+      maxConcurrent: 1
+      skipMachinePools: true
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: CLUSTER__NAME-install-config
+      namespace: ceph
+    type: Opaque
+    stringData:             # Add subnet name in line number 68 and 86
+      install-config.yaml: |
+        apiVersion: v1
+        baseDomain: ceph.ccitredhat.com
+        compute:
+        - name: worker
+          platform:
+            openstack:
+              type: ci.memory.medium
+          replicas: 0
+        controlPlane:
+          name: master
+          platform:
+            openstack:
+              type: ci.standard.xxxl
+          replicas: 1
+        metadata:
+          name: demo1
+        networking:
+          clusterNetwork:
+          - cidr: 10.128.0.0/14
+            hostPrefix: 23
+          machineNetwork:
+          - cidr: 192.169.0.0/16
+          networkType: OpenShiftSDN
+          serviceNetwork:
+          - 172.30.0.0/16
+        platform:
+          openstack:
+            cloud: ""
+            computeFlavor: m1.large
+            externalDNS: null
+            externalNetwork: provider_net_cci_12
+        pullSecret: ""
+        sshKey: ""
+  - apiVersion: hive.openshift.io/v1
+    kind: ClusterDeploymentCustomization
+    metadata:
+      name: CLUSTER__NAME
+      namespace: ceph
+    spec:
+      installConfigPatches:
+        - op: replace
+          path: /platform/openstack/apiFloatingIP
+          value: 10.0.209.206   # Add floating IP for API
+        - op: replace
+          path: /platform/openstack/ingressFloatingIP
+          value: 10.0.210.47    # Add floating IP for INGRESS
+        - op: replace
+          path: /platform/openstack/externalNetwork
+          value: provider_net_cci_12  # Add subnet name here
+        - op: replace
+          path: /metadata/name
+          value: CLUSTER__NAME
+  - apiVersion: hive.openshift.io/v1
+    kind: ClusterImageSet
+    metadata:
+      name: CLUSTER__NAME-imageset
+      namespace: ceph
+    spec:
+      releaseImage: OCP__IMAGE
