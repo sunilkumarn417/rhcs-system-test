@@ -1,0 +1,37 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: RUN_NAME-pvc
+  namespace: NAME_SPACE
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: STORAGE_SIZE
+  storageClassName: STORAGE_CLASS
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: RUN_NAME-pod
+  namespace: NAME_SPACE
+spec:
+  containers:
+    - name: busybox
+      image: quay.io/vcppds7878/busybox:latest
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -c
+        - while true; do echo $(date); dd if=/dev/urandom bs=1024 count=10240 of=/mnt/test/mbr.img oflag=append conv=notrunc; sync; sleep 1; done
+      volumeMounts:
+        - mountPath: /mnt/test
+          name: RUN_NAME-volume
+  volumes:
+    - name: RUN_NAME-volume
+      persistentVolumeClaim:
+        claimName: RUN_NAME-pvc
+        readOnly: false
