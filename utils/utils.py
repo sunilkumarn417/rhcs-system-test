@@ -1,4 +1,7 @@
 """RHCS-System-test Utility module."""
+from random import choices
+from string import ascii_lowercase, digits
+
 from yaml import dump, safe_load
 
 
@@ -20,3 +23,8 @@ def get_kubeconfig(name="qe-hive"):
     with open(filename, "w") as _file:
         _file.write(dump(content))
     return filename
+
+
+def generate_random_name(length=6):
+    """Return random name."""
+    return "".join(choices(ascii_lowercase + digits, k=length))
